@@ -1,0 +1,11 @@
+# Ignore storage and consume contents but keep directory structure
+storage/*
+consume/*
+!**/.keep
+
+# Ignore npm modules
+node_modules
+dist
+
+# Ignore local settings
+settings_local.py
