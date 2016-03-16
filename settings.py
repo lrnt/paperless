@@ -6,7 +6,8 @@ CONSUME_DIR = path.join(BASE_PATH, 'consume')
 STORAGE_DIR = path.join(BASE_PATH, 'storage')
 
 CONVERT_BIN = '/usr/bin/convert'
-CONVERT_DEFAULT_SETTINGS = ['-density', '300', '-depth', '8', '-scene', '1']
+CONVERT_DEFAULT_SETTINGS = ['-density', '300', '-depth', '8', '-scene', '1',
+                            '-alpha', 'off']
 
 TESSERACT_BIN = '/usr/bin/tesseract'
 TESSERACT_LANGUAGES = 'eng'
@@ -25,4 +26,7 @@ TAG_DEFINITIONS = {
     }
 }
 
-from settings_local import *
+try:
+    from settings_local import *
+except ImportError:
+    pass
