@@ -41,7 +41,11 @@ class DocumentAPI(MethodView):
                         mimetype='application/json')
 
     def patch(self, key):
-        return
+        document = self._doc_or_404(key)
+        document.metadata.update(request.get_json())
+        document.write_metadata()
+        return Response(json.dumps(document.metadata),
+                        mimetype='application/json')
 
 
 class TagAPI(MethodView):
