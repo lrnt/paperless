@@ -98,7 +98,8 @@ class Document(object):
 
         if exit_code != 0:
             raise ProcessingError(
-                'Was unable to convert document to pngs ({}).'.format(exit_code)
+                'Was unable to convert document to {}s ({}).'.format(fileformat,
+                                                                     exit_code)
             )
 
         return glob.glob(path.join(
