@@ -1,3 +1,4 @@
+import argparse
 import glob
 import hashlib
 import json
@@ -9,6 +10,7 @@ import re
 
 from datetime import datetime
 from os import path, stat, mkdir, remove
+from time import sleep
 
 from settings import *
 from db import DB, DoesNotExist
@@ -157,10 +159,21 @@ class Document(object):
 
 
 class Consumer(object):
-    def __init__(self):
+    def __init__(self, keep=False, continuous=False, interval=10):
         self._check_config()
+        self.keep = keep
+        self.continuous = continuous
+        self.interval = interval
 
     def consume(self):
+        while True:
+            self._consume()
+            if not self.continuous:
+                break
+            sleep(self.interval)
+
+
+    def _consume(self):
         pdfs = glob.glob(path.join(CONSUME_DIR, '*.pdf'))
 
         for pdf in pdfs:
@@ -171,12 +184,14 @@ class Consumer(object):
                 document.process()
             except AlreadyImported:
                 print('Already imported.')
-                continue
-
-            print('Tagging... ', end='', flush=True)
-            entry = db.get(document.sha1)
-            entry.retag()
-            print('Done.')
+            else:
+                print('Tagging... ', end='', flush=True)
+                entry = db.get(document.sha1)
+                entry.retag()
+                print('Done.')
+            finally:
+                if not self.keep:
+                    remove(pdf)
 
     def _check_config(self):
         error_msg = '{} directory does not exist.'
@@ -189,5 +204,18 @@ class Consumer(object):
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Paperless consumer.')
+    parser.add_argument('-k', '--keep', action='store_true',
+                        help="dont't remove consumed documents")
+    parser.add_argument('-c', '--continuous', action='store_true',
+                        help='run consumer in a continuous loop')
+    parser.add_argument('-i', '--interval', default=10, type=int,
+                        help='interval in seconds for the continuous loop')
+
     consumer = Consumer()
+    args = parser.parse_args(namespace=consumer)
+
+    if args.interval < 1:
+        parser.fail('--interval/-i has to be a postive integer')
+
     consumer.consume()
