@@ -2,7 +2,7 @@
 
 import fetch from 'isomorphic-fetch';
 
-const API_ROOT = `${location.protocol}${location.host}`
+const API_ROOT = `${location.protocol}//${location.host}`
 
 export const SET_QUERY = 'SET_QUERY'
 export const SET_TAG = 'SET_TAG'
