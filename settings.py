@@ -12,6 +12,8 @@ CONVERT_DEFAULT_SETTINGS = ['-density', '300', '-depth', '8', '-scene', '1',
 TESSERACT_BIN = '/usr/bin/tesseract'
 TESSERACT_LANGUAGES = 'eng'
 
+UNPAPER_BIN = '/usr/bin/unpaper'
+
 MATCH_ANY = 1
 MATCH_ALL = 2
 MATCH_LITERAL = 3

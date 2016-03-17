@@ -87,14 +87,19 @@ class Document(object):
         self.cleanup()
         self.move_to_final_destination()
 
-    def _convert(self, settings=[], prefix='', fileformat='png'):
+    def _convert(self, command_path, input_path, settings=[],
+                 prefix='', fileformat='png'):
         if prefix:
             prefix = '{}-'.format(prefix)
 
-        exit_code = subprocess.Popen((
-            CONVERT_BIN, *CONVERT_DEFAULT_SETTINGS, *settings, self.path,
-            path.join(self.dest_pages, '{}%04d.{}'.format(prefix, fileformat))
-        )).wait()
+        output_path = path.join(
+            self.dest_pages,
+            '{}%04d.{}'.format(prefix, fileformat)
+        )
+        exit_code = subprocess.Popen(
+            (command_path, *settings, input_path, output_path),
+            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL
+        ).wait()
 
         if exit_code != 0:
             raise ProcessingError(
@@ -107,13 +112,35 @@ class Document(object):
                                                                 fileformat)
         ))
 
-    def create_pages(self):
-        originals = self._convert()
-        greyscales = self._convert(
-            settings=['-type', 'grayscale'],
+    def _convert_originals(self):
+        return self._convert(
+            CONVERT_BIN,
+            self.path,
+            settings=CONVERT_DEFAULT_SETTINGS
+        )
+
+    def _convert_greyscales(self):
+        return self._convert(
+            CONVERT_BIN,
+            self.path,
+            settings=[*CONVERT_DEFAULT_SETTINGS, '-type', 'grayscale'],
             prefix='grayscale',
             fileformat='pnm'
         )
+
+    def _convert_unpapereds(self):
+        input_path = path.join(self.dest_pages, 'grayscale-%04d.pnm')
+        return self._convert(
+            UNPAPER_BIN,
+            input_path,
+            prefix='unpapered',
+            fileformat='pnm'
+        )
+
+    def create_pages(self):
+        originals = self._convert_originals()
+        greyscales = self._convert_greyscales()
+        unpapereds = self._convert_unpapereds()
 
         keys = [
             path.basename(png).replace('.png', '')
@@ -124,11 +151,12 @@ class Document(object):
             self.pages[key] = {
                 'original': originals[idx],
                 'greyscale': greyscales[idx],
+                'unpapered': unpapereds[idx],
             }
 
     def create_ocr_text_files(self):
         for key, page in self.pages.items():
-            png = path.join(self.dest_pages, page['greyscale'])
+            png = path.join(self.dest_pages, page['unpapered'])
             proc = subprocess.Popen((
                 TESSERACT_BIN, png, 'stdout', '-l', TESSERACT_LANGUAGES
             ), stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
@@ -151,6 +179,7 @@ class Document(object):
     def cleanup(self):
         for key, page in self.pages.items():
             remove(page['greyscale'])
+            remove(page['unpapered'])
 
     def move_to_final_destination(self):
         shutil.move(
