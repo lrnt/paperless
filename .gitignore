@@ -9,3 +9,7 @@ dist
 
 # Ignore local settings
 settings_local.py
+
+# Ignore python stuff
+__pycache__
+*.pyc
